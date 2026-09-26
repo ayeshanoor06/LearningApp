@@ -5,7 +5,7 @@ import android.content.Context
 class BillingManager(
     private val context: Context,
     private val onProductsLoaded: (monthlyPrice: String, yearlyPrice: String) -> Unit,
-    private val onPurchaseCompleted: () -> Unit,
+    private val onPurchaseCompleted: (Transaction) -> Unit,
     private val onSubscriptionStatusChanged: (Boolean) -> Unit
 ) {
 
@@ -15,13 +15,6 @@ class BillingManager(
         loadDemoProducts()
     }
 
-    /**
-     * Loads demo subscription prices.
-     *
-     * This version does not connect to Google Play Billing.
-     * It is completely free and works locally for development,
-     * demonstrations and internship project testing.
-     */
     private fun loadDemoProducts() {
 
         val monthlyPrice = "Rs. 499 / month"
@@ -33,38 +26,69 @@ class BillingManager(
         )
     }
 
-    /**
-     * Simulates a monthly subscription purchase.
-     */
+
     fun launchMonthlyPurchase() {
 
+        val transaction = createTransaction(
+            plan = "Monthly",
+            amount = "Rs. 499"
+        )
+
         isSubscribed = true
 
-        onPurchaseCompleted()
+        onPurchaseCompleted(transaction)
+
         onSubscriptionStatusChanged(true)
     }
 
-    /**
-     * Simulates a yearly subscription purchase.
-     */
+
     fun launchYearlyPurchase() {
 
+        val transaction = createTransaction(
+            plan = "Yearly",
+            amount = "Rs. 4,999"
+        )
+
         isSubscribed = true
 
-        onPurchaseCompleted()
+        onPurchaseCompleted(transaction)
+
         onSubscriptionStatusChanged(true)
     }
 
-    /**
-     * Returns the current demo subscription status.
-     */
+
+    private fun createTransaction(
+        plan: String,
+        amount: String
+    ): Transaction {
+
+        val transactionId =
+            "DEMO-" + System.currentTimeMillis()
+
+        val currentDate =
+            java.text.SimpleDateFormat(
+                "dd MMMM yyyy, hh:mm a",
+                java.util.Locale.getDefault()
+            ).format(
+                java.util.Date()
+            )
+
+        return Transaction(
+            transactionId = transactionId,
+            plan = plan,
+            amount = amount,
+            status = "Successful",
+            date = currentDate
+        )
+    }
+
+
     fun isUserSubscribed(): Boolean {
+
         return isSubscribed
     }
 
-    /**
-     * Cancels the demo subscription.
-     */
+
     fun cancelSubscription() {
 
         isSubscribed = false
@@ -72,12 +96,8 @@ class BillingManager(
         onSubscriptionStatusChanged(false)
     }
 
-    /**
-     * Closes the billing manager.
-     *
-     * There is no real billing connection in this free demo version.
-     */
+
     fun endConnection() {
-        // Nothing to close in demo mode.
+
     }
 }

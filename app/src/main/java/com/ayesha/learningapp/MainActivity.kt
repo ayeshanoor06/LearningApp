@@ -1,12 +1,16 @@
 package com.ayesha.learningapp
 
+
+import android.net.Uri
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,9 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.io.File
 
 
 class MainActivity : ComponentActivity() {
@@ -53,10 +59,6 @@ class MainActivity : ComponentActivity() {
 }
 
 
-/* =========================================================
-   COLORS
-   ========================================================= */
-
 val DarkBrown = Color(0xFF38240D)
 val Brown = Color(0xFF713600)
 val OrangeBrown = Color(0xFFC05800)
@@ -67,9 +69,7 @@ val LightOrange = Color(0xFFFFE1C4)
 val SuccessGreen = Color(0xFFDFF2DF)
 
 
-/* =========================================================
-   MAIN APP
-   ========================================================= */
+ //   MAIN APP
 
 @Composable
 fun LearningApp() {
@@ -83,6 +83,10 @@ fun LearningApp() {
     }
 
     var showLearningContent by remember {
+        mutableStateOf(false)
+    }
+
+    var showTransactionHistory by remember {
         mutableStateOf(false)
     }
 
@@ -110,20 +114,32 @@ fun LearningApp() {
 
                             isSubscribed = true
                             showSubscriptionScreen = false
-
                         },
 
                         onBack = {
 
                             showSubscriptionScreen = false
-
                         }
                     )
                 }
 
 
                 /*
-                 * Actual lesson content
+                 * Transaction history
+                 */
+                showTransactionHistory -> {
+
+                    TransactionHistoryScreen(
+                        onBack = {
+
+                            showTransactionHistory = false
+                        }
+                    )
+                }
+
+
+                /*
+                 * Learning content
                  */
                 showLearningContent && selectedModule != null -> {
 
@@ -131,6 +147,7 @@ fun LearningApp() {
                         module = selectedModule!!,
 
                         onBack = {
+
                             showLearningContent = false
                         }
                     )
@@ -138,7 +155,7 @@ fun LearningApp() {
 
 
                 /*
-                 * Module details
+                 * Module detail
                  */
                 selectedModule != null -> {
 
@@ -148,14 +165,17 @@ fun LearningApp() {
                         isSubscribed = isSubscribed,
 
                         onBack = {
+
                             selectedModule = null
                         },
 
                         onSubscribe = {
+
                             showSubscriptionScreen = true
                         },
 
                         onStartLearning = {
+
                             showLearningContent = true
                         }
                     )
@@ -163,7 +183,7 @@ fun LearningApp() {
 
 
                 /*
-                 * Home screen
+                 * Home
                  */
                 else -> {
 
@@ -178,6 +198,11 @@ fun LearningApp() {
                         onSubscribe = {
 
                             showSubscriptionScreen = true
+                        },
+
+                        onTransactionHistory = {
+
+                            showTransactionHistory = true
                         }
                     )
                 }
@@ -187,9 +212,7 @@ fun LearningApp() {
 }
 
 
-/* =========================================================
-   DATA MODEL
-   ========================================================= */
+// DATA MODEL
 
 data class LearningModule(
     val title: String,
@@ -198,9 +221,7 @@ data class LearningModule(
 )
 
 
-/* =========================================================
-   MODULE LIST
-   ========================================================= */
+   // MODULE LIST
 
 val learningModules = listOf(
 
@@ -236,15 +257,14 @@ val learningModules = listOf(
 )
 
 
-/* =========================================================
-   HOME SCREEN
-   ========================================================= */
+   // HOME SCREEN
 
 @Composable
 fun HomeScreen(
     isSubscribed: Boolean,
     onModuleClick: (LearningModule) -> Unit,
-    onSubscribe: () -> Unit
+    onSubscribe: () -> Unit,
+    onTransactionHistory: () -> Unit
 ) {
 
     Column(
@@ -310,10 +330,11 @@ fun HomeScreen(
 
                 Text(
                     text =
-                        if (isSubscribed)
+                        if (isSubscribed) {
                             "Premium Active"
-                        else
-                            "Free Account",
+                        } else {
+                            "Free Account"
+                        },
 
                     fontSize = 19.sp,
 
@@ -330,10 +351,11 @@ fun HomeScreen(
 
                 Text(
                     text =
-                        if (isSubscribed)
+                        if (isSubscribed) {
                             "You have access to all premium learning modules."
-                        else
-                            "Subscribe to unlock premium learning modules.",
+                        } else {
+                            "Subscribe to unlock premium learning modules."
+                        },
 
                     fontSize = 14.sp,
 
@@ -362,12 +384,45 @@ fun HomeScreen(
 
                         Text(
                             text = "View Subscription Plans",
+
                             color = White,
+
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
+        }
+
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
+
+        /*
+         * Payment history
+         */
+
+        Button(
+            onClick = onTransactionHistory,
+
+            modifier = Modifier.fillMaxWidth(),
+
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Brown
+            ),
+
+            shape = RoundedCornerShape(12.dp)
+        ) {
+
+            Text(
+                text = "Payment History",
+
+                color = White,
+
+                fontWeight = FontWeight.Bold
+            )
         }
 
 
@@ -378,8 +433,11 @@ fun HomeScreen(
 
         Text(
             text = "Learning Modules",
+
             fontSize = 23.sp,
+
             fontWeight = FontWeight.Bold,
+
             color = DarkBrown
         )
 
@@ -397,6 +455,7 @@ fun HomeScreen(
                 isSubscribed = isSubscribed,
 
                 onClick = {
+
                     onModuleClick(module)
                 }
             )
@@ -415,9 +474,7 @@ fun HomeScreen(
 }
 
 
-/* =========================================================
-   MODULE CARD
-   ========================================================= */
+   // MODULE CARD
 
 @Composable
 fun ModuleCard(
@@ -434,6 +491,7 @@ fun ModuleCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
+
                 onClick()
             },
 
@@ -535,10 +593,11 @@ fun ModuleCard(
 
             Text(
                 text =
-                    if (locked)
+                    if (locked) {
                         "Subscribe to unlock"
-                    else
-                        "Open module →",
+                    } else {
+                        "Open module →"
+                    },
 
                 fontSize = 14.sp,
 
@@ -551,9 +610,7 @@ fun ModuleCard(
 }
 
 
-/* =========================================================
-   MODULE DETAIL SCREEN
-   ========================================================= */
+  //  MODULE DETAIL SCREEN
 
 @Composable
 fun ModuleDetailScreen(
@@ -762,9 +819,7 @@ fun ModuleDetailScreen(
 }
 
 
-/* =========================================================
-   LEARNING CONTENT SCREEN
-   ========================================================= */
+   // LEARNING CONTENT SCREEN
 
 @Composable
 fun LearningContentScreen(
@@ -823,24 +878,20 @@ fun LearningContentScreen(
                 IntroductionProgrammingLesson()
             }
 
-
             "Object-Oriented Programming" -> {
 
                 OopLesson()
             }
-
 
             "Advanced Kotlin" -> {
 
                 AdvancedKotlinLesson()
             }
 
-
             "Android App Development" -> {
 
                 AndroidDevelopmentLesson()
             }
-
 
             "Advanced Software Development" -> {
 
@@ -856,9 +907,7 @@ fun LearningContentScreen(
 }
 
 
-/* =========================================================
-   INTRODUCTION TO PROGRAMMING
-   ========================================================= */
+  // INTRODUCTION TO PROGRAMMING
 
 @Composable
 fun IntroductionProgrammingLesson() {
@@ -918,9 +967,7 @@ fun IntroductionProgrammingLesson() {
 }
 
 
-/* =========================================================
-   OBJECT ORIENTED PROGRAMMING
-   ========================================================= */
+//  OBJECT-ORIENTED PROGRAMMING
 
 @Composable
 fun OopLesson() {
@@ -980,9 +1027,7 @@ fun OopLesson() {
 }
 
 
-/* =========================================================
-   ADVANCED KOTLIN
-   ========================================================= */
+   // ADVANCED KOTLIN
 
 @Composable
 fun AdvancedKotlinLesson() {
@@ -1042,9 +1087,7 @@ fun AdvancedKotlinLesson() {
 }
 
 
-/* =========================================================
-   ANDROID APP DEVELOPMENT
-   ========================================================= */
+  //  ANDROID APP DEVELOPMENT
 
 @Composable
 fun AndroidDevelopmentLesson() {
@@ -1104,9 +1147,7 @@ fun AndroidDevelopmentLesson() {
 }
 
 
-/* =========================================================
-   ADVANCED SOFTWARE DEVELOPMENT
-   ========================================================= */
+    // ADVANCED SOFTWARE DEVELOPMENT
 
 @Composable
 fun AdvancedSoftwareDevelopmentLesson() {
@@ -1166,9 +1207,7 @@ fun AdvancedSoftwareDevelopmentLesson() {
 }
 
 
-/* =========================================================
-   LESSON HEADING
-   ========================================================= */
+  //  LESSON HEADING
 
 @Composable
 fun LessonHeading(
@@ -1192,9 +1231,7 @@ fun LessonHeading(
 }
 
 
-/* =========================================================
-   LESSON TEXT
-   ========================================================= */
+  //  LESSON TEXT
 
 @Composable
 fun LessonText(
@@ -1217,6 +1254,7 @@ fun LessonText(
 }
 
 
+  //  SUBSCRIPTION SCREEN
 
 @Composable
 fun SubscriptionScreen(
@@ -1260,7 +1298,7 @@ fun SubscriptionScreen(
 
 
     /*
-     * Free local billing manager
+     * FREE LOCAL DEMO BILLING
      */
 
     val billingManager = remember {
@@ -1275,7 +1313,18 @@ fun SubscriptionScreen(
                 yearlyPrice = yearly
             },
 
-            onPurchaseCompleted = {
+            onPurchaseCompleted = { transaction ->
+
+                /*
+                 * Save transaction locally
+                 */
+
+                val transactionManager =
+                    TransactionManager(context)
+
+                transactionManager.saveTransaction(
+                    transaction
+                )
 
                 showSuccessMessage = true
             },
@@ -1307,7 +1356,6 @@ fun SubscriptionScreen(
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
-
 
         BackButton(
             onBack = onBack
@@ -1350,7 +1398,7 @@ fun SubscriptionScreen(
 
 
         /*
-         * Free demo notice
+         * DEMO NOTICE
          */
 
         Card(
@@ -1402,7 +1450,7 @@ fun SubscriptionScreen(
 
 
         /*
-         * Monthly plan
+         * MONTHLY PLAN
          */
 
         PlanCard(
@@ -1427,7 +1475,7 @@ fun SubscriptionScreen(
 
 
         /*
-         * Yearly plan
+         * YEARLY PLAN
          */
 
         PlanCard(
@@ -1452,7 +1500,7 @@ fun SubscriptionScreen(
 
 
         /*
-         * Continue button
+         * CONTINUE BUTTON
          */
 
         Button(
@@ -1497,7 +1545,7 @@ fun SubscriptionScreen(
 
 
         /*
-         * Success message
+         * SUCCESS MESSAGE
          */
 
         if (showSuccessMessage) {
@@ -1533,7 +1581,7 @@ fun SubscriptionScreen(
 
 
                     Text(
-                        text = "Demo purchase completed successfully. Premium modules are now unlocked.",
+                        text = "Demo purchase completed successfully. Your transaction has been saved and premium modules are now unlocked.",
 
                         fontSize = 14.sp,
 
@@ -1548,7 +1596,7 @@ fun SubscriptionScreen(
 }
 
 
-
+  //  PLAN CARD
 
 @Composable
 fun PlanCard(
@@ -1653,7 +1701,402 @@ fun PlanCard(
 }
 
 
-     // BACK BUTTON
+   // TRANSACTION HISTORY SCREEN
+
+@Composable
+fun TransactionHistoryScreen(
+    onBack: () -> Unit
+) {
+
+    val context = LocalContext.current
+
+    var transactions by remember {
+
+        mutableStateOf(
+            TransactionManager(context)
+                .getTransactions()
+        )
+    }
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(LightCream)
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp)
+    ) {
+
+        BackButton(
+            onBack = onBack
+        )
+
+
+        Spacer(
+            modifier = Modifier.height(20.dp)
+        )
+
+
+        Text(
+            text = "Payment History",
+
+            fontSize = 28.sp,
+
+            fontWeight = FontWeight.Bold,
+
+            color = DarkBrown
+        )
+
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+
+        Text(
+            text = "Your saved subscription transactions",
+
+            fontSize = 16.sp,
+
+            color = Brown
+        )
+
+
+        Spacer(
+            modifier = Modifier.height(24.dp)
+        )
+
+
+        if (transactions.isEmpty()) {
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+
+                shape = RoundedCornerShape(16.dp),
+
+                colors = CardDefaults.cardColors(
+                    containerColor = White
+                )
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+
+                    Text(
+                        text = "No Transactions Yet",
+
+                        fontSize = 20.sp,
+
+                        fontWeight = FontWeight.Bold,
+
+                        color = DarkBrown
+                    )
+
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+
+                    Text(
+                        text = "Your completed demo subscription purchases will appear here.",
+
+                        fontSize = 14.sp,
+
+                        color = Brown,
+
+                        lineHeight = 21.sp
+                    )
+                }
+            }
+
+        } else {
+
+            /*
+             * Newest transaction first
+             */
+
+            transactions
+                .asReversed()
+                .forEach { transaction ->
+
+                    TransactionCard(
+                        transaction = transaction
+                    )
+
+
+                    Spacer(
+                        modifier = Modifier.height(14.dp)
+                    )
+                }
+
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+
+            /*
+             * Clear history
+             */
+
+            Button(
+                onClick = {
+
+                    TransactionManager(context)
+                        .clearTransactions()
+
+                    transactions = emptyList<Transaction>().toMutableList()
+                },
+
+                modifier = Modifier.fillMaxWidth(),
+
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Brown
+                ),
+
+                shape = RoundedCornerShape(12.dp)
+            ) {
+
+                Text(
+                    text = "Clear Payment History",
+
+                    color = White,
+
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+
+        Spacer(
+            modifier = Modifier.height(30.dp)
+        )
+    }
+}
+
+
+   // TRANSACTION CARD
+
+@Composable
+fun TransactionCard(
+    transaction: Transaction
+) {
+
+    val context = LocalContext.current
+
+    var receiptFile by remember {
+        mutableStateOf<File?>(null)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+
+        shape = RoundedCornerShape(16.dp),
+
+        colors = CardDefaults.cardColors(
+            containerColor = White
+        ),
+
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 3.dp
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(18.dp)
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+
+                horizontalArrangement = Arrangement.SpaceBetween,
+
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Text(
+                    text = transaction.plan + " Plan",
+
+                    fontSize = 19.sp,
+
+                    fontWeight = FontWeight.Bold,
+
+                    color = DarkBrown
+                )
+
+
+                Text(
+                    text = transaction.status,
+
+                    fontSize = 12.sp,
+
+                    fontWeight = FontWeight.Bold,
+
+                    color = Color(0xFF287A35)
+                )
+            }
+
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+
+            TransactionDetail(
+                label = "Amount",
+
+                value = transaction.amount
+            )
+
+
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+
+            TransactionDetail(
+                label = "Transaction ID",
+
+                value = transaction.transactionId
+            )
+
+
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+
+            TransactionDetail(
+                label = "Date",
+
+                value = transaction.date
+            )
+
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
+
+            Button(
+                onClick = {
+                    try {
+                        receiptFile = ReceiptGenerator.generateReceipt(
+                            context = context,
+                            transaction = transaction
+                        )
+
+                        Toast.makeText(
+                            context,
+                            "Receipt generated successfully",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Failed to generate receipt",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = OrangeBrown
+                )
+            ) {
+                Text(
+                    text = "Generate Receipt",
+                    color = White
+                )
+            }
+
+            if (receiptFile != null) {
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                Button(
+                    onClick = {
+                        openReceipt(
+                            context = context,
+                            file = receiptFile!!
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Brown
+                    )
+                ) {
+                    Text(
+                        text = "View Receipt",
+                        color = White
+                    )
+                }
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                androidx.compose.material3.OutlinedButton(
+                    onClick = {
+                        shareReceipt(
+                            context = context,
+                            file = receiptFile!!
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Share Receipt",
+                        color = Brown
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+  //  TRANSACTION DETAIL
+
+@Composable
+fun TransactionDetail(
+    label: String,
+    value: String
+) {
+
+    Column {
+
+        Text(
+            text = label,
+
+            fontSize = 12.sp,
+
+            fontWeight = FontWeight.Bold,
+
+            color = Brown
+        )
+
+
+        Spacer(
+            modifier = Modifier.height(2.dp)
+        )
+
+
+        Text(
+            text = value,
+
+            fontSize = 14.sp,
+
+            color = DarkBrown
+        )
+    }
+}
+
+
+    // BACK BUTTON
+
 
 @Composable
 fun BackButton(
@@ -1695,3 +2138,89 @@ fun BackButton(
         )
     }
 }
+
+   // RECEIPT VIEW / SHARE HELPERS
+
+
+fun openReceipt(
+    context: Context,
+    file: File
+) {
+
+    try {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        context.startActivity(intent)
+
+    } catch (e: Exception) {
+        Toast.makeText(
+            context,
+            "No PDF viewer found",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+}
+
+fun shareReceipt(
+    context: Context,
+    file: File
+) {
+
+    try {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        context.startActivity(
+            Intent.createChooser(shareIntent, "Share Receipt")
+        )
+
+    } catch (e: Exception) {
+        Toast.makeText(
+            context,
+            "Unable to share receipt",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        fun openSubscriptionManagement(context: Context) {
+
+            try {
+
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(
+                        "https://play.google.com/store/account/subscriptions"
+                    )
+                )
+
+                context.startActivity(intent)
+
+            } catch (e: Exception) {
+
+                Toast.makeText(
+                    context,
+                    "Unable to open subscription management",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+}
+
